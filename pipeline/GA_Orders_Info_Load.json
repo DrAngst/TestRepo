@@ -1,0 +1,343 @@
+{
+	"name": "GA_Orders_Info_Load",
+	"properties": {
+		"activities": [
+			{
+				"name": "OrdersMapping",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.00:30:00",
+					"retry": 3,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "RelationalSource",
+						"query": {
+							"value": "SELECT \norder_id\n,value collate  utf8_general_ci   as ga_order_uuid\n,'blue' as color FROM order_blue_service.order_identifiers\nwhere type = 'analytics' and order_id>27723856\n\nunion all\n\nselect \no.id as order_id\n,m.value COLLATE utf8_general_ci  as ga_order_uuid\n,'green' as color from order_green.order_identifiers m\ninner join tag2.orders o on o.uuid = m.order_uuid\nand m.type = 'analytics' and o.id>27723856\norder by 3,1 desc",
+							"type": "Expression"
+						}
+					},
+					"sink": {
+						"type": "SqlSink",
+						"writeBatchSize": 5000,
+						"preCopyScript": "truncate table dbo.Orders_GA_Map"
+					},
+					"enableStaging": false,
+					"dataIntegrationUnits": 0,
+					"translator": {
+						"type": "TabularTranslator",
+						"columnMappings": {
+							"order_id": "order_id",
+							"ga_order_uuid": "ga_order_uuid",
+							"color": "color"
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "AWS_RDS_Order_Mapping",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "Azure_Orders_Temp_Mapping_Storage",
+						"type": "DatasetReference"
+					}
+				]
+			},
+			{
+				"name": "RecordNewMark",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "MergeAndInfo",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "ReadEmailWebHook",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[sp_write_watermark]",
+					"storedProcedureParameters": {
+						"id": {
+							"value": {
+								"value": "@activity('MergeAndInfo').output.firstRow.Mark",
+								"type": "Expression"
+							},
+							"type": "Int64"
+						},
+						"ObjectName": {
+							"value": {
+								"value": "@pipeline().parameters.JobName",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"stamp": {
+							"value": null,
+							"type": "DateTime"
+						},
+						"rows": {
+							"value": {
+								"value": "@activity('MergeAndInfo').output.firstRow.Rows",
+								"type": "Expression"
+							},
+							"type": "Int64"
+						},
+						"DF_UUID": {
+							"value": {
+								"value": "@pipeline().DataFactory",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"DF_PL_UUID": {
+							"value": {
+								"value": "@pipeline().Pipeline",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"DF_PL_RUN_UUID": {
+							"value": {
+								"value": "@pipeline().RunId",
+								"type": "Expression"
+							},
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "Azure_SQL_DF_META",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"environment": "dev"
+					}
+				}
+			},
+			{
+				"name": "LoadBQInfo",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.00:30:00",
+					"retry": 3,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "GoogleBigQuerySource",
+						"query": {
+							"value": "SELECT * FROM @{pipeline().parameters.BQViewName}",
+							"type": "Expression"
+						}
+					},
+					"sink": {
+						"type": "SqlSink",
+						"writeBatchSize": 10000,
+						"preCopyScript": "truncate table dbo.Orders_GA_BQ"
+					},
+					"enableStaging": false,
+					"dataIntegrationUnits": 0
+				},
+				"inputs": [
+					{
+						"referenceName": "BQ_GA_ORDERS_INFO",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "Azure_GA_ORDERS_DEST",
+						"type": "DatasetReference"
+					}
+				]
+			},
+			{
+				"name": "MergeAndInfo",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "OrdersMapping",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "LoadBQInfo",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 5,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlSource",
+						"sqlReaderStoredProcedureName": "[dbo].[sp_merge_orders]",
+						"storedProcedureParameters": {
+							"clear": {
+								"type": "Boolean",
+								"value": "True"
+							},
+							"DF_RUN_UUID": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().RunId",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					"dataset": {
+						"referenceName": "Azure_GA_ORDERS_DEST",
+						"type": "DatasetReference"
+					}
+				}
+			},
+			{
+				"name": "ReadEmailWebHook",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlSource",
+						"sqlReaderStoredProcedureName": "[dbo].[sp_read_email_config]"
+					},
+					"dataset": {
+						"referenceName": "DF_META",
+						"type": "DatasetReference"
+					}
+				}
+			},
+			{
+				"name": "CompleteEmail",
+				"type": "WebActivity",
+				"dependsOn": [
+					{
+						"activity": "RecordNewMark",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"url": {
+						"value": "@activity('ReadEmailWebHook').output.firstRow.URI",
+						"type": "Expression"
+					},
+					"method": "POST",
+					"headers": {
+						"Content-Type": "application/json"
+					},
+					"body": {
+						"value": "{\n    \"df_name\": \"@{pipeline().DataFactory}\",\n    \"pl_name\": \"@{pipeline().Pipeline}\",\n    \"pl_run\": \"@{pipeline().RunId}\",\n    \"object_name\": \"@{pipeline().parameters.JobName}\",\n    \"is_error\": \"no\",\n    \"message\": \"Object: @{pipeline().parameters.JobName}\nMax Order ID Recorded: @{activity('MergeAndInfo').output.firstRow.Mark}\nOrders Recorded: @{activity('MergeAndInfo').output.firstRow.Rows}\",\n    \"receiver\": \"@{activity('ReadEmailWebHook').output.firstRow.Recipient}\"\n}",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Fill Data Lake",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "RecordNewMark",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "DL_Trigger",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"Project": "dl_google_order_map",
+						"Env": "prod",
+						"LoadAll": {
+							"value": "@pipeline().parameters.byPassFalse",
+							"type": "Expression"
+						},
+						"LoadDelta": {
+							"value": "@pipeline().parameters.byPassTrue",
+							"type": "Expression"
+						},
+						"ConnectionStringSecretKey": "con-str-azure-sql-df-data"
+					}
+				}
+			}
+		],
+		"parameters": {
+			"JobName": {
+				"type": "String",
+				"defaultValue": "DF_GA_ORDER_MAPPING"
+			},
+			"BQViewName": {
+				"type": "String",
+				"defaultValue": "`bi`.`GA_Orders_info_last_days`"
+			},
+			"byPassFalse": {
+				"type": "bool",
+				"defaultValue": false
+			},
+			"byPassTrue": {
+				"type": "bool",
+				"defaultValue": true
+			}
+		},
+		"folder": {
+			"name": "GA_Orders_Info"
+		},
+		"annotations": []
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

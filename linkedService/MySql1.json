@@ -1,0 +1,16 @@
+{
+	"name": "MySql1",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "MySql",
+		"typeProperties": {
+			"connectionString": "server=mysql-1-read-replica.production.rebuy.cloud;port=3306;database=order_green;user=etldbread;sslmode=1;usesystemtruststore=0",
+			"encryptedCredential": "eyJDcmVkZW50aWFsSWQiOiI1YjdlM2M5Mi05YzFkLTQxYzktOGE3MS1hZTI4ZjBhMDJiY2QiLCJWZXJzaW9uIjoiMi4wIiwiQ2xhc3NUeXBlIjoiTWljcm9zb2Z0LkRhdGFQcm94eS5Db3JlLkludGVyU2VydmljZURhdGFDb250cmFjdC5DcmVkZW50aWFsU1UwNkNZMTQifQ=="
+		},
+		"connectVia": {
+			"referenceName": "rebuy-cloud-hosted",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

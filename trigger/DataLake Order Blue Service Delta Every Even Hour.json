@@ -1,0 +1,31 @@
+{
+	"name": "DataLake Order Blue Service Delta Every Even Hour",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "DL_Trigger",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"Project": "dl_mysql_order_blue_service",
+					"Env": "prod",
+					"LoadAll": false,
+					"LoadDelta": true,
+					"ConnectionStringSecretKey": "con-str-aws-mysql-backend"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Hour",
+				"interval": 2,
+				"startTime": "2019-03-18T00:10:00Z",
+				"timeZone": "UTC"
+			}
+		}
+	}
+}

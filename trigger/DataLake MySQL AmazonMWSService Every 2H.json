@@ -1,0 +1,31 @@
+{
+	"name": "DataLake MySQL AmazonMWSService Every 2H",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "DL_Trigger",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"Project": "dl_mysql_amazon_mws_service",
+					"Env": "prod",
+					"LoadAll": true,
+					"LoadDelta": true,
+					"ConnectionStringSecretKey": "con-str-aws-mysql-backend"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Hour",
+				"interval": 2,
+				"startTime": "2019-01-31T10:39:00Z",
+				"timeZone": "UTC"
+			}
+		}
+	}
+}

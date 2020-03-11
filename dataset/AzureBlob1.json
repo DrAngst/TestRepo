@@ -1,0 +1,78 @@
+{
+	"name": "AzureBlob1",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "Azure_Blob_rb_bi_dist2",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"blob_root": {
+				"type": "String",
+				"defaultValue": "df-exports"
+			},
+			"blob_object": {
+				"type": "String",
+				"defaultValue": "items"
+			},
+			"blob_file_prefix": {
+				"type": "String",
+				"defaultValue": "items"
+			},
+			"blob_project": {
+				"type": "String",
+				"defaultValue": "grading"
+			},
+			"load_type": {
+				"type": "String",
+				"defaultValue": "inc"
+			},
+			"blob_extension": {
+				"type": "String",
+				"defaultValue": ".gz"
+			},
+			"date_part": {
+				"type": "String",
+				"defaultValue": "2018/10/02"
+			},
+			"datetime_part": {
+				"type": "String",
+				"defaultValue": "163503"
+			}
+		},
+		"folder": {
+			"name": "AZURE"
+		},
+		"annotations": [],
+		"type": "AzureBlob",
+		"typeProperties": {
+			"format": {
+				"type": "JsonFormat",
+				"encodingName": "UTF-8",
+				"filePattern": "setOfObjects",
+				"jsonNodeReference": "xzczxc",
+				"jsonPathDefinition": {
+					"user_id": "$.['user_id']",
+					"experiment_id": "$.['experiment_id']",
+					"bucket_label": "$.['bucket_label']",
+					"timestamp": "$.['timestamp']",
+					"action": "$.['action']",
+					"context": "$.['context']",
+					"payload.deviceCategory": "$.['payload']['deviceCategory']",
+					"payload.branch": "$.['payload']['branch']",
+					"payload.loggedIn": "$.['payload']['loggedIn']",
+					"payload.partner": "$.['payload']['partner']",
+					"payload.newVisitor": "$.['payload']['newVisitor']",
+					"payload.productType": "$.['payload']['productType']",
+					"payload.productId": "$.['payload']['productId']"
+				}
+			},
+			"compression": {
+				"type": "GZip",
+				"level": "Optimal"
+			},
+			"fileName": "event_action_D2018-11-27T11_55_33.json.gz",
+			"folderPath": "dl-prod/dl_wasabi/wasabi/event_action/2018/11/27"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

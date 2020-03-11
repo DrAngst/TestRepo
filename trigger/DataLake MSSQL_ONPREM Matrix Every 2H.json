@@ -1,0 +1,31 @@
+{
+	"name": "DataLake MSSQL_ONPREM Matrix Every 2H",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "DL_Trigger",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"Project": "dl_mssql_matrix",
+					"Env": "prod",
+					"LoadAll": true,
+					"LoadDelta": true,
+					"ConnectionStringSecretKey": "con-str-prem-mssql-matrix"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Hour",
+				"interval": 2,
+				"startTime": "2019-12-12T12:04:00Z",
+				"timeZone": "UTC"
+			}
+		}
+	}
+}

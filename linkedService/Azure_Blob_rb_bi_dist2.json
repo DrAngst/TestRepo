@@ -1,0 +1,11 @@
+{
+	"name": "Azure_Blob_rb_bi_dist2",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "AzureBlobStorage",
+		"typeProperties": {
+			"serviceEndpoint": "https://rbbist2.blob.core.windows.net"
+		}
+	}
+}

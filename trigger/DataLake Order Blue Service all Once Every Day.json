@@ -1,0 +1,39 @@
+{
+	"name": "DataLake Order Blue Service all Once Every Day",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "DL_Trigger",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"Project": "dl_mysql_order_blue_service",
+					"Env": "prod",
+					"LoadAll": true,
+					"LoadDelta": false,
+					"ConnectionStringSecretKey": "con-str-aws-mysql-backend"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Day",
+				"interval": 1,
+				"startTime": "2019-12-12T10:48:00Z",
+				"timeZone": "UTC",
+				"schedule": {
+					"minutes": [
+						3
+					],
+					"hours": [
+						0
+					]
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,22 @@
+{
+	"name": "AWS_RDS_PG_Cloud_GW",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"type": "PostgreSql",
+		"typeProperties": {
+			"connectionString": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "Azure_Key_Vault",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "con-str-aws-pg-backend"
+			}
+		},
+		"connectVia": {
+			"referenceName": "rebuy-cloud-hosted",
+			"type": "IntegrationRuntimeReference"
+		},
+		"annotations": []
+	}
+}

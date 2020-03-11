@@ -1,0 +1,31 @@
+{
+	"name": "DataLake MSSQL Navision Every 2H",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "DL_Trigger",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"Project": "dl_mssql_navision",
+					"Env": "prod",
+					"LoadAll": true,
+					"LoadDelta": true,
+					"ConnectionStringSecretKey": "con-str-azure-sql-navision"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Hour",
+				"interval": 2,
+				"startTime": "2019-02-01T14:00:00Z",
+				"timeZone": "UTC"
+			}
+		}
+	}
+}

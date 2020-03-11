@@ -1,0 +1,31 @@
+{
+	"name": "DataLake MYSQL ReBuy Poland every 2H",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "DL_Trigger",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"Project": "dl_mysql_rebuy_pln",
+					"Env": "prod",
+					"LoadAll": true,
+					"LoadDelta": true,
+					"ConnectionStringSecretKey": "con-str-prem-mysql-rebuy-poland"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Hour",
+				"interval": 2,
+				"startTime": "2019-12-13T10:01:00Z",
+				"timeZone": "UTC"
+			}
+		}
+	}
+}

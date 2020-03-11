@@ -1,0 +1,27 @@
+{
+	"name": "AWS_RDS_MySQL_Cloud_GW",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AWS_RDS_MYSQL_Cloud_GW",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"constr": {
+					"value": "@dataset().ConnectionStringSecretKey",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"ConnectionStringSecretKey": {
+				"type": "String",
+				"defaultValue": "con-str-aws-mysql-backend"
+			}
+		},
+		"folder": {
+			"name": "AWS RDS"
+		},
+		"annotations": [],
+		"type": "RelationalTable"
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

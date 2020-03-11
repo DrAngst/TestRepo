@@ -1,0 +1,12 @@
+{
+	"name": "rebuy-on-prem-runtime",
+	"properties": {
+		"type": "SelfHosted",
+		"typeProperties": {
+			"linkedInfo": {
+				"resourceId": "/subscriptions/f45675c9-8125-4c1e-8660-d50a79e9e576/resourcegroups/rebuy_sales_pricing/providers/Microsoft.DataFactory/factories/ViridianDataFactory/integrationruntimes/IntegrationRuntime-SelfHosted-cbv",
+				"authorizationType": "Rbac"
+			}
+		}
+	}
+}

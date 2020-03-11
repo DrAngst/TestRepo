@@ -1,0 +1,31 @@
+{
+	"name": "MYSQL_OnPrem",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"parameters": {
+			"constr": {
+				"type": "String",
+				"defaultValue": "con-str-prem-mysql-refurb"
+			}
+		},
+		"type": "MySql",
+		"typeProperties": {
+			"connectionString": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "Azure_Key_Vault",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": {
+					"value": "@linkedService().constr",
+					"type": "Expression"
+				}
+			}
+		},
+		"connectVia": {
+			"referenceName": "rebuy-on-prem-runtime",
+			"type": "IntegrationRuntimeReference"
+		},
+		"annotations": []
+	}
+}

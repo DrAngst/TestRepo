@@ -1,0 +1,30 @@
+{
+	"name": "GA Orders Mapping Every 2 hours",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "GA_Orders_Info_Load",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"JobName": "DF_GA_ORDER_MAPPING",
+					"BQViewName": "`ga---big-query.bi.GA_Orders_info_last_days`",
+					"byPassFalse": false,
+					"byPassTrue": true
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Hour",
+				"interval": 2,
+				"startTime": "2018-09-05T00:15:00.831Z",
+				"timeZone": "UTC"
+			}
+		}
+	}
+}

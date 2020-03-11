@@ -1,0 +1,27 @@
+{
+	"name": "MSSQL_OnPrem_Dynamic",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "MSSQL_On_Prem",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"constr": {
+					"value": "@dataset().ConnectionStringSecretKey",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"ConnectionStringSecretKey": {
+				"type": "String",
+				"defaultValue": "con-str-prem-mssql-dwh"
+			}
+		},
+		"folder": {
+			"name": "On-prem"
+		},
+		"annotations": [],
+		"type": "SqlServerTable"
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

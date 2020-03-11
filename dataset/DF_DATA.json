@@ -1,0 +1,15 @@
+{
+	"name": "DF_DATA",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "Azure_SQL_DF",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "AZURE"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable"
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

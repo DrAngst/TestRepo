@@ -1,0 +1,31 @@
+{
+	"name": "DataLake RAS Every Even Hour",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "DL_Trigger",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"Project": "dl_mysql_ras",
+					"Env": "prod",
+					"LoadAll": true,
+					"LoadDelta": true,
+					"ConnectionStringSecretKey": "con-str-aws-mysql-backend"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Hour",
+				"interval": 2,
+				"startTime": "2019-05-17T00:13:00Z",
+				"timeZone": "UTC"
+			}
+		}
+	}
+}

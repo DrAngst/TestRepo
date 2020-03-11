@@ -1,0 +1,33 @@
+{
+	"name": "DataLake ItemTracking Every Even Hour",
+	"properties": {
+		"annotations": [
+			"DataLake Fill"
+		],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "DL_Trigger",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"Project": "dl_item_tracking",
+					"Env": "prod",
+					"LoadAll": true,
+					"LoadDelta": true,
+					"ConnectionStringSecretKey": "con-str-aws-pg-backend"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Hour",
+				"interval": 2,
+				"startTime": "2018-10-19T00:15:00.881Z",
+				"timeZone": "UTC"
+			}
+		}
+	}
+}

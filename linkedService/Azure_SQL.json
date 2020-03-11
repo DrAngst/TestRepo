@@ -1,0 +1,27 @@
+{
+	"name": "Azure_SQL",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"parameters": {
+			"constr": {
+				"type": "String",
+				"defaultValue": "con-str-azure-sql-adverity"
+			}
+		},
+		"annotations": [],
+		"type": "AzureSqlDatabase",
+		"typeProperties": {
+			"connectionString": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "Azure_Key_Vault",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": {
+					"value": "@linkedService().constr",
+					"type": "Expression"
+				}
+			}
+		}
+	}
+}

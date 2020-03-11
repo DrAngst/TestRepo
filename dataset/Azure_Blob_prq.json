@@ -1,0 +1,61 @@
+{
+	"name": "Azure_Blob_prq",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "Azure_Blob_rb_bi_dist2",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"blob_root": {
+				"type": "String",
+				"defaultValue": "dl-prod"
+			},
+			"blob_object": {
+				"type": "String",
+				"defaultValue": "experiment"
+			},
+			"blob_file_prefix": {
+				"type": "String"
+			},
+			"blob_project": {
+				"type": "String",
+				"defaultValue": "wasabi"
+			},
+			"load_type": {
+				"type": "String",
+				"defaultValue": "all"
+			},
+			"blob_extension": {
+				"type": "String",
+				"defaultValue": ".prq"
+			},
+			"date_part": {
+				"type": "String",
+				"defaultValue": "2018/10/02"
+			},
+			"datetime_part": {
+				"type": "String",
+				"defaultValue": "163503"
+			}
+		},
+		"folder": {
+			"name": "AZURE"
+		},
+		"annotations": [],
+		"type": "AzureBlob",
+		"typeProperties": {
+			"format": {
+				"type": "ParquetFormat"
+			},
+			"fileName": {
+				"value": "@{dataset().blob_project}/@{dataset().blob_object}/@{dataset().date_part}/@{dataset().blob_file_prefix}_D@{dataset().datetime_part}.@{dataset().blob_extension}",
+				"type": "Expression"
+			},
+			"folderPath": {
+				"value": "@dataset().blob_root",
+				"type": "Expression"
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

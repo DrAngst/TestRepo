@@ -1,0 +1,33 @@
+{
+	"name": "DataLake Shipping Every Even Hour",
+	"properties": {
+		"annotations": [
+			"DataLake Fill"
+		],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "DL_Trigger",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"Project": "dl_pg_shipping",
+					"Env": "prod",
+					"LoadAll": true,
+					"LoadDelta": true,
+					"ConnectionStringSecretKey": "con-str-aws-pg-backend"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Hour",
+				"interval": 2,
+				"startTime": "2018-12-07T00:15:00Z",
+				"timeZone": "UTC"
+			}
+		}
+	}
+}

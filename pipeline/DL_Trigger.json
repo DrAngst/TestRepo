@@ -1,0 +1,894 @@
+{
+	"name": "DL_Trigger",
+	"properties": {
+		"activities": [
+			{
+				"name": "ReadTables_all",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.00:00:30",
+					"retry": 10,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlSource",
+						"sqlReaderStoredProcedureName": "[dbo].[sp_read_project_instructions]",
+						"storedProcedureParameters": {
+							"Project": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.Project",
+									"type": "Expression"
+								}
+							},
+							"LoadType": {
+								"type": "String",
+								"value": {
+									"value": "@{if(pipeline().parameters.LoadAll,'all','n/a')}",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					"dataset": {
+						"referenceName": "DF_META",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "l_all_PG",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "PG_all",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('PG_all').output.value",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"activities": [
+						{
+							"name": "PG_exec_all",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "DataMove_PG_to_Blob_All",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"MoveObjectID": {
+										"value": "@{item().FObjectID}",
+										"type": "Expression"
+									},
+									"Env": {
+										"value": "@pipeline().parameters.Env",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "ReadTables_delta",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "1.00:00:30",
+					"retry": 10,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlSource",
+						"sqlReaderStoredProcedureName": "[dbo].[sp_read_project_instructions]",
+						"storedProcedureParameters": {
+							"Project": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.Project",
+									"type": "Expression"
+								}
+							},
+							"LoadType": {
+								"type": "String",
+								"value": {
+									"value": "@{if(pipeline().parameters.LoadDelta,'delta','n/a')}",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					"dataset": {
+						"referenceName": "DF_META",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "l_dlt_PG",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "PG_delta",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('PG_delta').output.value",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"activities": [
+						{
+							"name": "PG_exec_delta",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "DataMove_PG_to_Blob_Delta",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"MoveObjectID": {
+										"value": "@{item().FObjectID}",
+										"type": "Expression"
+									},
+									"Env": {
+										"value": "@pipeline().parameters.Env",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "PG_all",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "ReadTables_all",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('ReadTables_all').output.value",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@equals(item().FSourceType,'PG')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "MySQL_all",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "ReadTables_all",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('ReadTables_all').output.value",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@equals(item().FSourceType,'MYSQL')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "l_all_MYSQL",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "MySQL_all",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('MySQL_all').output.value",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"activities": [
+						{
+							"name": "MySQL_exec_all",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "DataMove_MySQL_to_Blob_All",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"MoveObjectID": {
+										"value": "@{item().FObjectID}",
+										"type": "Expression"
+									},
+									"Env": {
+										"value": "@pipeline().parameters.Env",
+										"type": "Expression"
+									},
+									"ConnectionStringSecretKey": {
+										"value": "@pipeline().parameters.ConnectionStringSecretKey",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "PG_delta",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "ReadTables_delta",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('ReadTables_delta').output.value",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@equals(item().FSourceType,'PG')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "MySQL_delta",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "ReadTables_delta",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('ReadTables_delta').output.value",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@equals(item().FSourceType,'MYSQL')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "l_dlt_MySQL",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "MySQL_delta",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('MySQL_delta').output.value",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"activities": [
+						{
+							"name": "MySQL_exec_delta",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "DataMove_MySQL_to_Blob_Delta",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"MoveObjectID": {
+										"value": "@{item().FObjectID}",
+										"type": "Expression"
+									},
+									"Env": {
+										"value": "@pipeline().parameters.Env",
+										"type": "Expression"
+									},
+									"ConnectionStringSecretKey": {
+										"value": "@pipeline().parameters.ConnectionStringSecretKey",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "MS_PREM_all",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "ReadTables_all",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('ReadTables_all').output.value",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@equals(item().FSourceType,'MSSQL_ONPREM')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "l_all_MS_PREM",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "MS_PREM_all",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('MS_PREM_all').output.value",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"activities": [
+						{
+							"name": "MSSQL_ONPREM_exec_all",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "DataMove_MSSQL_OnPrem_to_Blob_All",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"MoveObjectID": {
+										"value": "@{item().FObjectID}",
+										"type": "Expression"
+									},
+									"Env": {
+										"value": "@pipeline().parameters.Env",
+										"type": "Expression"
+									},
+									"ConnectionStringSecretKey": {
+										"value": "@pipeline().parameters.ConnectionStringSecretKey",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "MS_PREM_delta",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "ReadTables_delta",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('ReadTables_delta').output.value",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@equals(item().FSourceType,'MSSQL_ONPREM')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "l_dlt_MS_PREM",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "MS_PREM_delta",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('MS_PREM_delta').output.value",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"activities": [
+						{
+							"name": "MSSQL_ONPREM_exec_delta",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "DataMove_MSSQL_OnPrem_to_Blob_Delta",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"MoveObjectID": {
+										"value": "@{item().FObjectID}",
+										"type": "Expression"
+									},
+									"Env": {
+										"value": "@pipeline().parameters.Env",
+										"type": "Expression"
+									},
+									"ConnectionStringSecretKey": {
+										"value": "@pipeline().parameters.ConnectionStringSecretKey",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "Azure_SQL_ALL",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "ReadTables_all",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('ReadTables_all').output.value",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@equals(item().FSourceType,'AZURE_SQL')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "l_all_azure_sql",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Azure_SQL_ALL",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Azure_SQL_ALL').output.value",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"activities": [
+						{
+							"name": "Azure_SQL_exec_all",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "DataMove_Azure_SQL_to_Blob_All",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"MoveObjectID": {
+										"value": "@{item().FObjectID}",
+										"type": "Expression"
+									},
+									"Env": {
+										"value": "@pipeline().parameters.Env",
+										"type": "Expression"
+									},
+									"ConnectionStringSecretKey": {
+										"value": "@pipeline().parameters.ConnectionStringSecretKey",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "MySQL_PREM_ALL",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "ReadTables_all",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('ReadTables_all').output.value",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@equals(item().FSourceType,'MYSQL_ONPREM')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "l_all_mysql_prem",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "MySQL_PREM_ALL",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('MySQL_PREM_ALL').output.value",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"activities": [
+						{
+							"name": "MySQL_Prem_exec_all",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "DataMove_MySQL_Prem_to_Blob_All",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": false,
+								"parameters": {
+									"MoveObjectID": {
+										"value": "@{item().FObjectID}",
+										"type": "Expression"
+									},
+									"Env": {
+										"value": "@pipeline().parameters.Env",
+										"type": "Expression"
+									},
+									"ConnectionStringSecretKey": {
+										"value": "@pipeline().parameters.ConnectionStringSecretKey",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "MySQL_PREM_delta",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "ReadTables_delta",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('ReadTables_delta').output.value",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@equals(item().FSourceType,'MYSQL_ONPREM')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "l_dlt_MySQL_PREM",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "MySQL_PREM_delta",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('MySQL_PREM_delta').output.value",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"activities": [
+						{
+							"name": "MySQL_ONPREM_exec_delta",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "DataMove_MySQL_Prem_to_Blob_Delta",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": false,
+								"parameters": {
+									"MoveObjectID": {
+										"value": "@{item().FObjectID}",
+										"type": "Expression"
+									},
+									"Env": {
+										"value": "@pipeline().parameters.Env",
+										"type": "Expression"
+									},
+									"ConnectionStringSecretKey": {
+										"value": "@pipeline().parameters.ConnectionStringSecretKey",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "Azure_SQL_Delta",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "ReadTables_delta",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('ReadTables_delta').output.value",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@equals(item().FSourceType,'AZURE_SQL')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "l_dlt_Azure_SQL",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Azure_SQL_Delta",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Azure_SQL_Delta').output.value",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"activities": [
+						{
+							"name": "Azure_SQL_exec_delta",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "DataMove_Azure_SQL_to_Blob_Delta",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": false,
+								"parameters": {
+									"MoveObjectID": {
+										"value": "@{item().FObjectID}",
+										"type": "Expression"
+									},
+									"Env": {
+										"value": "@pipeline().parameters.Env",
+										"type": "Expression"
+									},
+									"ConnectionStringSecretKey": {
+										"value": "@pipeline().parameters.ConnectionStringSecretKey",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "REFURB",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "ReadTables_all",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('ReadTables_all').output.value",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@equals(item().FSourceType,'REFURB')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "l_all_refurb",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "REFURB",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('REFURB').output.value",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"activities": [
+						{
+							"name": "REFURB_exec_all",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "DataMove_MySQL_Refurb_to_Blob_All",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"MoveObjectID": {
+										"value": "@{item().FObjectID}",
+										"type": "Expression"
+									},
+									"Env": {
+										"value": "@pipeline().parameters.Env",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"Project": {
+				"type": "String",
+				"defaultValue": "dl_mysql_tag2"
+			},
+			"Env": {
+				"type": "String",
+				"defaultValue": "prod"
+			},
+			"LoadAll": {
+				"type": "Bool",
+				"defaultValue": false
+			},
+			"LoadDelta": {
+				"type": "Bool",
+				"defaultValue": false
+			},
+			"ConnectionStringSecretKey": {
+				"type": "String",
+				"defaultValue": "con-str-aws-mysql-backend"
+			}
+		},
+		"folder": {
+			"name": "DataMove"
+		},
+		"annotations": []
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

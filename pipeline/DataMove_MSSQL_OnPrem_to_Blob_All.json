@@ -1,0 +1,276 @@
+{
+	"name": "DataMove_MSSQL_OnPrem_to_Blob_All",
+	"properties": {
+		"activities": [
+			{
+				"name": "get_info",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.00:00:30",
+					"retry": 20,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlSource",
+						"sqlReaderStoredProcedureName": "[dbo].[sp_get_object_instruction]",
+						"storedProcedureParameters": {
+							"ObjectID": {
+								"type": "Int32",
+								"value": {
+									"value": "@pipeline().parameters.MoveObjectID",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					"dataset": {
+						"referenceName": "DF_META",
+						"type": "DatasetReference"
+					}
+				}
+			},
+			{
+				"name": "get_info_env",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.00:00:30",
+					"retry": 20,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlSource",
+						"sqlReaderStoredProcedureName": "[dbo].[sp_read_param_text]",
+						"storedProcedureParameters": {
+							"ObjectName": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.Env",
+									"type": "Expression"
+								}
+							},
+							"Param": {
+								"type": "String",
+								"value": "dl_root"
+							}
+						}
+					},
+					"dataset": {
+						"referenceName": "DF_META",
+						"type": "DatasetReference"
+					}
+				}
+			},
+			{
+				"name": "Move",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "get_info_env",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "get_info",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.03:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlSource",
+						"sqlReaderQuery": {
+							"value": "select @{activity('get_info').output.firstRow.FSelect} from @{activity('get_info').output.firstRow.FSourceDB}.@{activity('get_info').output.firstRow.FSourceTable}",
+							"type": "Expression"
+						}
+					},
+					"sink": {
+						"type": "BlobSink"
+					},
+					"enableStaging": false,
+					"dataIntegrationUnits": 0
+				},
+				"inputs": [
+					{
+						"referenceName": "MSSQL_OnPrem_Dynamic",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringSecretKey": {
+								"value": "@pipeline().parameters.ConnectionStringSecretKey",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "Azure_Blob_json_gz",
+						"type": "DatasetReference",
+						"parameters": {
+							"blob_root": {
+								"value": "@activity('get_info_env').output.firstRow.Value",
+								"type": "Expression"
+							},
+							"blob_object": {
+								"value": "@{if(empty(activity('get_info').output.firstRow.FDestTable),activity('get_info').output.firstRow.FSourceTable,activity('get_info').output.firstRow.FDestTable)}",
+								"type": "Expression"
+							},
+							"blob_file_prefix": {
+								"value": "@{if(empty(activity('get_info').output.firstRow.FDestTable),activity('get_info').output.firstRow.FSourceTable,activity('get_info').output.firstRow.FDestTable)}",
+								"type": "Expression"
+							},
+							"blob_project": {
+								"value": "@{activity('get_info').output.firstRow.FProject}/@{activity('get_info').output.firstRow.FSourceDB}",
+								"type": "Expression"
+							},
+							"load_type": {
+								"value": "@activity('get_info').output.firstRow.FLoadType",
+								"type": "Expression"
+							},
+							"blob_extension": {
+								"value": "@activity('get_info').output.firstRow.FDestParam",
+								"type": "Expression"
+							},
+							"date_part": {
+								"value": "@{replace(substring(formatDateTime(utcnow()),0,10),'-','/')}",
+								"type": "Expression"
+							},
+							"datetime_part": {
+								"value": "@{replace(substring(formatDateTime(utcnow()),0,19),':','_')}",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			},
+			{
+				"name": "mark_set",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "Move",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.00:10:00",
+					"retry": 10,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[sp_set_mark]",
+					"storedProcedureParameters": {
+						"DataRead": {
+							"value": {
+								"value": "@activity('Move').output.dataRead",
+								"type": "Expression"
+							},
+							"type": "Int64"
+						},
+						"DataWritten": {
+							"value": {
+								"value": "@activity('Move').output.dataWritten",
+								"type": "Expression"
+							},
+							"type": "Int64"
+						},
+						"Duration": {
+							"value": {
+								"value": "@activity('Move').output.copyDuration",
+								"type": "Expression"
+							},
+							"type": "Int64"
+						},
+						"ObjectID": {
+							"value": {
+								"value": "@pipeline().parameters.MoveObjectID",
+								"type": "Expression"
+							},
+							"type": "Int32"
+						},
+						"RowsCopied": {
+							"value": {
+								"value": "@activity('Move').output.rowsCopied",
+								"type": "Expression"
+							},
+							"type": "Int64"
+						},
+						"RowsRead": {
+							"value": {
+								"value": "@activity('Move').output.rowsRead",
+								"type": "Expression"
+							},
+							"type": "Int64"
+						},
+						"Value": {
+							"value": {
+								"value": "@{string(activity('Move').output.rowsCopied)}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"ValueType": {
+							"value": null,
+							"type": "String"
+						},
+						"InitMarkSource": {
+							"value": null,
+							"type": "String"
+						},
+						"InitMarkDest": {
+							"value": null,
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "Azure_SQL_DF_META",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"parameters": {
+			"MoveObjectID": {
+				"type": "Int",
+				"defaultValue": 86
+			},
+			"Env": {
+				"type": "String",
+				"defaultValue": "prod"
+			},
+			"ConnectionStringSecretKey": {
+				"type": "String",
+				"defaultValue": "con-str-prem-mssql-dorma"
+			}
+		},
+		"folder": {
+			"name": "DataMove"
+		},
+		"annotations": []
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

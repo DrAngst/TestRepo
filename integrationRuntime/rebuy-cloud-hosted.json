@@ -1,0 +1,6 @@
+{
+	"name": "rebuy-cloud-hosted",
+	"properties": {
+		"type": "SelfHosted"
+	}
+}

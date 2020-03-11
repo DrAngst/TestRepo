@@ -1,0 +1,16 @@
+{
+	"name": "AWS_RDS_MYSQL_Tag2",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "MySql",
+		"typeProperties": {
+			"connectionString": "server=mysql-1-read-replica.production.rebuy.cloud;port=3306;database=tag2;user=etldbread;sslmode=1;usesystemtruststore=0",
+			"encryptedCredential": "eyJDcmVkZW50aWFsSWQiOiI2MDBiMjMyZi1mNTYyLTRhMWYtYjMxZS05MGE5N2RkNTFhNjciLCJWZXJzaW9uIjoiMi4wIiwiQ2xhc3NUeXBlIjoiTWljcm9zb2Z0LkRhdGFQcm94eS5Db3JlLkludGVyU2VydmljZURhdGFDb250cmFjdC5DcmVkZW50aWFsU1UwNkNZMTQifQ=="
+		},
+		"connectVia": {
+			"referenceName": "rebuy-on-prem-runtime",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

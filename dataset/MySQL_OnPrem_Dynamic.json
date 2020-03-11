@@ -1,0 +1,27 @@
+{
+	"name": "MySQL_OnPrem_Dynamic",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "MYSQL_OnPrem",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"constr": {
+					"value": "@dataset().ConnectionStringSecretKey",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"ConnectionStringSecretKey": {
+				"type": "String",
+				"defaultValue": "con-str-aws-mysql-backend"
+			}
+		},
+		"folder": {
+			"name": "On-prem"
+		},
+		"annotations": [],
+		"type": "RelationalTable"
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

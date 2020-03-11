@@ -1,0 +1,15 @@
+{
+	"name": "MySQL_Refurb_ODBC",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "MySQL_ODBC_On_Prem_Refurb",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "On-prem"
+		},
+		"annotations": [],
+		"type": "RelationalTable"
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

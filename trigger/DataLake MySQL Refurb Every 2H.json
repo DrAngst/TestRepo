@@ -1,0 +1,31 @@
+{
+	"name": "DataLake MySQL Refurb Every 2H",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "DL_Trigger",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"Project": "dl_mysql_refurb",
+					"Env": "prod",
+					"LoadAll": true,
+					"LoadDelta": false,
+					"ConnectionStringSecretKey": "con-str-prem-mysql-refurb-odbc"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Hour",
+				"interval": 2,
+				"startTime": "2019-02-22T14:35:00Z",
+				"timeZone": "UTC"
+			}
+		}
+	}
+}

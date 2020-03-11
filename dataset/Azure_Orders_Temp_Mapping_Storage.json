@@ -1,0 +1,32 @@
+{
+	"name": "Azure_Orders_Temp_Mapping_Storage",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "Azure_SQL_DF",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "AZURE"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"structure": [
+			{
+				"name": "order_id",
+				"type": "Int64"
+			},
+			{
+				"name": "ga_order_uuid",
+				"type": "String"
+			},
+			{
+				"name": "color",
+				"type": "String"
+			}
+		],
+		"typeProperties": {
+			"tableName": "[dbo].[Orders_GA_Map]"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

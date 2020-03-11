@@ -1,0 +1,30 @@
+{
+	"name": "DataLake Shipping_claim Every Even Hour",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "DL_Trigger",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"Project": "dl_pg_shipping_claim",
+					"Env": "prod",
+					"LoadAll": false,
+					"LoadDelta": true
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Hour",
+				"interval": 2,
+				"startTime": "2019-09-04T02:02:00Z",
+				"timeZone": "UTC"
+			}
+		}
+	}
+}

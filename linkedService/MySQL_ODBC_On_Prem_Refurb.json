@@ -1,0 +1,23 @@
+{
+	"name": "MySQL_ODBC_On_Prem_Refurb",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "Odbc",
+		"typeProperties": {
+			"connectionString": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "Azure_Key_Vault",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "con-str-prem-mysql-refurb-odbc"
+			},
+			"authenticationType": "Anonymous"
+		},
+		"connectVia": {
+			"referenceName": "rebuy-on-prem-runtime",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

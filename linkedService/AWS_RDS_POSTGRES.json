@@ -1,0 +1,22 @@
+{
+	"name": "AWS_RDS_POSTGRES",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "PostgreSql",
+		"typeProperties": {
+			"connectionString": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "Azure_Key_Vault",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "con-str-aws-pg-backend"
+			}
+		},
+		"connectVia": {
+			"referenceName": "rebuy-on-prem-runtime",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

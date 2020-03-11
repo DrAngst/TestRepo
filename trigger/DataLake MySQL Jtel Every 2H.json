@@ -1,0 +1,31 @@
+{
+	"name": "DataLake MySQL Jtel Every 2H",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "DL_Trigger",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"Project": "dl_mysql_jtel",
+					"Env": "prod",
+					"LoadAll": false,
+					"LoadDelta": true,
+					"ConnectionStringSecretKey": "con-str-prem-mysql-jtel"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Hour",
+				"interval": 2,
+				"startTime": "2019-02-20T12:05:00Z",
+				"timeZone": "UTC"
+			}
+		}
+	}
+}

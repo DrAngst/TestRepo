@@ -1,0 +1,31 @@
+{
+	"name": "AWS_RDS_MYSQL_Cloud_GW",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"parameters": {
+			"constr": {
+				"type": "String",
+				"defaultValue": "con-str-aws-mysql-backend"
+			}
+		},
+		"type": "MySql",
+		"typeProperties": {
+			"connectionString": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "Azure_Key_Vault",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": {
+					"value": "@linkedService().constr",
+					"type": "Expression"
+				}
+			}
+		},
+		"connectVia": {
+			"referenceName": "rebuy-cloud-hosted",
+			"type": "IntegrationRuntimeReference"
+		},
+		"annotations": []
+	}
+}

@@ -1,0 +1,16 @@
+{
+	"name": "ON_PREM_MSSQL_DORMA",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "SqlServer",
+		"typeProperties": {
+			"connectionString": "integrated security=False;data source=BERWNTA01\\IPEVX4;initial catalog=timacnt;user id=bi_user",
+			"encryptedCredential": "eyJDcmVkZW50aWFsSWQiOiIwNWMwZjkzNy1kN2RmLTQwOTktYjY0Ny0xNjU2OTM1ZjBhYTUiLCJWZXJzaW9uIjoiMi4wIiwiQ2xhc3NUeXBlIjoiTWljcm9zb2Z0LkRhdGFQcm94eS5Db3JlLkludGVyU2VydmljZURhdGFDb250cmFjdC5DcmVkZW50aWFsU1UwNkNZMTQifQ=="
+		},
+		"connectVia": {
+			"referenceName": "rebuy-on-prem-runtime",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

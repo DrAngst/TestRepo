@@ -1,0 +1,786 @@
+{
+	"name": "DataMove_MySQL_to_Blob_Delta",
+	"properties": {
+		"activities": [
+			{
+				"name": "get_info",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "get_info_env",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.00:00:30",
+					"retry": 20,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlSource",
+						"sqlReaderStoredProcedureName": "[dbo].[sp_get_object_instruction]",
+						"storedProcedureParameters": {
+							"ObjectID": {
+								"type": "Int32",
+								"value": {
+									"value": "@pipeline().parameters.MoveObjectID",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					"dataset": {
+						"referenceName": "DF_META",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "get_info_env",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.00:00:30",
+					"retry": 20,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlSource",
+						"sqlReaderStoredProcedureName": "[dbo].[sp_read_param_text]",
+						"storedProcedureParameters": {
+							"ObjectName": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.Env",
+									"type": "Expression"
+								}
+							},
+							"Param": {
+								"type": "String",
+								"value": "dl_root"
+							}
+						}
+					},
+					"dataset": {
+						"referenceName": "DF_META",
+						"type": "DatasetReference"
+					}
+				}
+			},
+			{
+				"name": "SingleMarkColumn",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "get_info",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('get_info').output.value",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@empty(item().FMarkSecondaryColumn)",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "MultiMarkColumns",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "get_info",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('get_info').output.value",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@not(empty(item().FMarkSecondaryColumn))",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Single",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "SingleMarkColumn",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('SingleMarkColumn').output.value",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "mark_get_source",
+							"type": "Lookup",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "RelationalSource",
+									"query": {
+										"value": "select max(@{activity('SingleMarkColumn').output.value[0].FMarkColumn}) as Mark,count(1) as RowCount\nfrom \n\n@{activity('SingleMarkColumn').output.value[0].FSourceDB}.@{activity('SingleMarkColumn').output.value[0].FSourceTable} \n\nwhere \n@{replace(activity('SingleMarkColumn').output.value[0].FMarkSearchSQL,'$FROM$',string(activity('SingleMarkColumn').output.value[0].FLastMark))}",
+										"type": "Expression"
+									}
+								},
+								"dataset": {
+									"referenceName": "AWS_RDS_MySQL_Cloud_GW",
+									"type": "DatasetReference",
+									"parameters": {
+										"ConnectionStringSecretKey": {
+											"value": "@pipeline().parameters.ConnectionStringSecretKey",
+											"type": "Expression"
+										}
+									}
+								}
+							}
+						},
+						{
+							"name": "if_condition_single",
+							"type": "IfCondition",
+							"dependsOn": [
+								{
+									"activity": "mark_get_source",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"expression": {
+									"value": "@{greater(activity('mark_get_source').output.firstRow.RowCount,0)}",
+									"type": "Expression"
+								},
+								"ifFalseActivities": [
+									{
+										"name": "set_mark_empty",
+										"type": "SqlServerStoredProcedure",
+										"dependsOn": [],
+										"policy": {
+											"timeout": "0.00:10:00",
+											"retry": 10,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"storedProcedureName": "[dbo].[sp_set_mark]",
+											"storedProcedureParameters": {
+												"DataRead": {
+													"value": null,
+													"type": "Int64"
+												},
+												"DataWritten": {
+													"value": null,
+													"type": "Int64"
+												},
+												"Duration": {
+													"value": null,
+													"type": "Int64"
+												},
+												"ObjectID": {
+													"value": {
+														"value": "@pipeline().parameters.MoveObjectID",
+														"type": "Expression"
+													},
+													"type": "Int32"
+												},
+												"RowsCopied": {
+													"value": null,
+													"type": "Int64"
+												},
+												"RowsRead": {
+													"value": null,
+													"type": "Int64"
+												},
+												"Value": {
+													"value": null,
+													"type": "String"
+												},
+												"ValueType": {
+													"value": null,
+													"type": "String"
+												},
+												"InitMarkSource": {
+													"value": null,
+													"type": "String"
+												},
+												"InitMarkDest": {
+													"value": null,
+													"type": "String"
+												}
+											}
+										},
+										"linkedServiceName": {
+											"referenceName": "Azure_SQL_DF_META",
+											"type": "LinkedServiceReference"
+										}
+									}
+								],
+								"ifTrueActivities": [
+									{
+										"name": "Move",
+										"type": "Copy",
+										"dependsOn": [],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 1,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"source": {
+												"type": "RelationalSource",
+												"query": {
+													"value": "select @{activity('SingleMarkColumn').output.value[0].FSelect} from @{activity('SingleMarkColumn').output.value[0].FSourceDB}.@{activity('SingleMarkColumn').output.value[0].FSourceTable} \nwhere \n@{replace(replace(activity('SingleMarkColumn').output.value[0].FMarkFilterSQL,'$FROM$',string(activity('SingleMarkColumn').output.value[0].FLastMark)),'$TO$',string(activity('mark_get_source').output.firstRow.Mark))}\n",
+													"type": "Expression"
+												}
+											},
+											"sink": {
+												"type": "BlobSink"
+											},
+											"enableStaging": false,
+											"dataIntegrationUnits": 0
+										},
+										"inputs": [
+											{
+												"referenceName": "AWS_RDS_MySQL_Cloud_GW",
+												"type": "DatasetReference",
+												"parameters": {
+													"ConnectionStringSecretKey": {
+														"value": "@pipeline().parameters.ConnectionStringSecretKey",
+														"type": "Expression"
+													}
+												}
+											}
+										],
+										"outputs": [
+											{
+												"referenceName": "Azure_Blob_json_gz",
+												"type": "DatasetReference",
+												"parameters": {
+													"blob_root": {
+														"value": "@activity('get_info_env').output.firstRow.Value",
+														"type": "Expression"
+													},
+													"blob_object": {
+														"value": "@{if(empty(activity('SingleMarkColumn').output.value[0].FDestTable),activity('SingleMarkColumn').output.value[0].FSourceTable,activity('SingleMarkColumn').output.value[0].FDestTable)}",
+														"type": "Expression"
+													},
+													"blob_file_prefix": {
+														"value": "@{if(empty(activity('SingleMarkColumn').output.value[0].FDestTable),activity('SingleMarkColumn').output.value[0].FSourceTable,activity('SingleMarkColumn').output.value[0].FDestTable)}",
+														"type": "Expression"
+													},
+													"blob_project": {
+														"value": "@{activity('SingleMarkColumn').output.value[0].FProject}/@{activity('SingleMarkColumn').output.value[0].FSourceDB}",
+														"type": "Expression"
+													},
+													"load_type": {
+														"value": "@activity('SingleMarkColumn').output.value[0].FLoadType",
+														"type": "Expression"
+													},
+													"blob_extension": {
+														"value": "@activity('SingleMarkColumn').output.value[0].FDestParam",
+														"type": "Expression"
+													},
+													"date_part": {
+														"value": "@{replace(substring(formatDateTime(utcnow()),0,10),'-','/')}",
+														"type": "Expression"
+													},
+													"datetime_part": {
+														"value": "@{replace(substring(formatDateTime(utcnow()),0,19),':','_')}",
+														"type": "Expression"
+													}
+												}
+											}
+										]
+									},
+									{
+										"name": "mark_set",
+										"type": "SqlServerStoredProcedure",
+										"dependsOn": [
+											{
+												"activity": "Move",
+												"dependencyConditions": [
+													"Succeeded"
+												]
+											}
+										],
+										"policy": {
+											"timeout": "0.00:10:00",
+											"retry": 10,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"storedProcedureName": "[dbo].[sp_set_mark]",
+											"storedProcedureParameters": {
+												"DataRead": {
+													"value": {
+														"value": "@activity('Move').output.dataRead",
+														"type": "Expression"
+													},
+													"type": "Int64"
+												},
+												"DataWritten": {
+													"value": {
+														"value": "@activity('Move').output.dataWritten",
+														"type": "Expression"
+													},
+													"type": "Int64"
+												},
+												"Duration": {
+													"value": {
+														"value": "@activity('Move').output.copyDuration",
+														"type": "Expression"
+													},
+													"type": "Int64"
+												},
+												"ObjectID": {
+													"value": {
+														"value": "@pipeline().parameters.MoveObjectID",
+														"type": "Expression"
+													},
+													"type": "Int32"
+												},
+												"RowsCopied": {
+													"value": {
+														"value": "@activity('Move').output.rowsCopied",
+														"type": "Expression"
+													},
+													"type": "Int64"
+												},
+												"RowsRead": {
+													"value": {
+														"value": "@activity('Move').output.rowsRead",
+														"type": "Expression"
+													},
+													"type": "Int64"
+												},
+												"Value": {
+													"value": {
+														"value": "@activity('mark_get_source').output.firstRow.Mark",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"ValueType": {
+													"value": {
+														"value": "@activity('SingleMarkColumn').output.value[0].FMarkColumnType",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"InitMarkSource": {
+													"value": {
+														"value": "@activity('mark_get_source').output.firstRow.Mark",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"InitMarkDest": {
+													"value": {
+														"value": "@activity('SingleMarkColumn').output.value[0].FLastMark",
+														"type": "Expression"
+													},
+													"type": "String"
+												}
+											}
+										},
+										"linkedServiceName": {
+											"referenceName": "Azure_SQL_DF_META",
+											"type": "LinkedServiceReference"
+										}
+									}
+								]
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "Multi",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "MultiMarkColumns",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('MultiMarkColumns').output.value",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "mark_get_source_multi",
+							"type": "Lookup",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "RelationalSource",
+									"query": {
+										"value": "select\nmax(joined.val) as Mark,\ncount(1) as RowCount\nfrom\n(\nselect @{activity('MultiMarkColumns').output.value[0].FMarkColumn} as val \nfrom \n@{activity('MultiMarkColumns').output.value[0].FSourceDB}.@{activity('MultiMarkColumns').output.value[0].FSourceTable}\nwhere \n@{replace(activity('MultiMarkColumns').output.value[0].FMarkSearchSQL,'$FROM$',string(activity('MultiMarkColumns').output.value[0].FLastMark))}\n\nunion all\n\nselect @{activity('MultiMarkColumns').output.value[0].FMarkSecondaryColumn} as val \nfrom \n@{activity('MultiMarkColumns').output.value[0].FSourceDB}.@{activity('MultiMarkColumns').output.value[0].FSourceTable}\nwhere \n@{replace(activity('MultiMarkColumns').output.value[0].FMarkSecondarySearchSQL,'$FROM$',string(activity('MultiMarkColumns').output.value[0].FLastMark))}\n) joined\n",
+										"type": "Expression"
+									}
+								},
+								"dataset": {
+									"referenceName": "AWS_RDS_MySQL_Cloud_GW",
+									"type": "DatasetReference",
+									"parameters": {
+										"ConnectionStringSecretKey": {
+											"value": "@pipeline().parameters.ConnectionStringSecretKey",
+											"type": "Expression"
+										}
+									}
+								}
+							}
+						},
+						{
+							"name": "if_condition_multi",
+							"type": "IfCondition",
+							"dependsOn": [
+								{
+									"activity": "mark_get_source_multi",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"expression": {
+									"value": "@{greater(activity('mark_get_source_multi').output.firstRow.RowCount,0)}",
+									"type": "Expression"
+								},
+								"ifFalseActivities": [
+									{
+										"name": "set_mark_empty_multi",
+										"type": "SqlServerStoredProcedure",
+										"dependsOn": [],
+										"policy": {
+											"timeout": "0.00:10:00",
+											"retry": 10,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"storedProcedureName": "[dbo].[sp_set_mark]",
+											"storedProcedureParameters": {
+												"DataRead": {
+													"value": null,
+													"type": "Int64"
+												},
+												"DataWritten": {
+													"value": null,
+													"type": "Int64"
+												},
+												"Duration": {
+													"value": null,
+													"type": "Int64"
+												},
+												"ObjectID": {
+													"value": {
+														"value": "@pipeline().parameters.MoveObjectID",
+														"type": "Expression"
+													},
+													"type": "Int32"
+												},
+												"RowsCopied": {
+													"value": null,
+													"type": "Int64"
+												},
+												"RowsRead": {
+													"value": null,
+													"type": "Int64"
+												},
+												"Value": {
+													"value": null,
+													"type": "String"
+												},
+												"ValueType": {
+													"value": null,
+													"type": "String"
+												},
+												"InitMarkSource": {
+													"value": null,
+													"type": "String"
+												},
+												"InitMarkDest": {
+													"value": null,
+													"type": "String"
+												}
+											}
+										},
+										"linkedServiceName": {
+											"referenceName": "Azure_SQL_DF_META",
+											"type": "LinkedServiceReference"
+										}
+									}
+								],
+								"ifTrueActivities": [
+									{
+										"name": "Move_multi",
+										"type": "Copy",
+										"dependsOn": [],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 1,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"source": {
+												"type": "RelationalSource",
+												"query": {
+													"value": "select\n@{activity('MultiMarkColumns').output.value[0].FSelect}\nFROM\n@{activity('MultiMarkColumns').output.value[0].FSourceDB}.@{activity('MultiMarkColumns').output.value[0].FSourceTable}\nwhere\n@{replace(replace(activity('MultiMarkColumns').output.value[0].FMarkFilterSQL,'$FROM$',string(activity('MultiMarkColumns').output.value[0].FLastMark)),'$TO$',string(activity('mark_get_source_multi').output.firstRow.Mark))}\n\nunion all\n\nselect\n@{activity('MultiMarkColumns').output.value[0].FSelect}\nFROM\n@{activity('MultiMarkColumns').output.value[0].FSourceDB}.@{activity('MultiMarkColumns').output.value[0].FSourceTable}\nwhere\n@{replace(replace(activity('MultiMarkColumns').output.value[0].FMarkSecondaryFilterSQL,'$FROM$',string(activity('MultiMarkColumns').output.value[0].FLastMark)),'$TO$',string(activity('mark_get_source_multi').output.firstRow.Mark))}",
+													"type": "Expression"
+												}
+											},
+											"sink": {
+												"type": "BlobSink"
+											},
+											"enableStaging": false,
+											"dataIntegrationUnits": 0
+										},
+										"inputs": [
+											{
+												"referenceName": "AWS_RDS_MySQL_Cloud_GW",
+												"type": "DatasetReference",
+												"parameters": {
+													"ConnectionStringSecretKey": {
+														"value": "@pipeline().parameters.ConnectionStringSecretKey",
+														"type": "Expression"
+													}
+												}
+											}
+										],
+										"outputs": [
+											{
+												"referenceName": "Azure_Blob_json_gz",
+												"type": "DatasetReference",
+												"parameters": {
+													"blob_root": {
+														"value": "@activity('get_info_env').output.firstRow.Value",
+														"type": "Expression"
+													},
+													"blob_object": {
+														"value": "@{if(empty(activity('MultiMarkColumns').output.value[0].FDestTable),activity('MultiMarkColumns').output.value[0].FSourceTable,activity('MultiMarkColumns').output.value[0].FDestTable)}",
+														"type": "Expression"
+													},
+													"blob_file_prefix": {
+														"value": "@{if(empty(activity('MultiMarkColumns').output.value[0].FDestTable),activity('MultiMarkColumns').output.value[0].FSourceTable,activity('MultiMarkColumns').output.value[0].FDestTable)}",
+														"type": "Expression"
+													},
+													"blob_project": {
+														"value": "@{activity('MultiMarkColumns').output.value[0].FProject}/@{activity('MultiMarkColumns').output.value[0].FSourceDB}",
+														"type": "Expression"
+													},
+													"load_type": {
+														"value": "@activity('MultiMarkColumns').output.value[0].FLoadType",
+														"type": "Expression"
+													},
+													"blob_extension": {
+														"value": "@activity('MultiMarkColumns').output.value[0].FDestParam",
+														"type": "Expression"
+													},
+													"date_part": {
+														"value": "@{replace(substring(formatDateTime(utcnow()),0,10),'-','/')}",
+														"type": "Expression"
+													},
+													"datetime_part": {
+														"value": "@{replace(substring(formatDateTime(utcnow()),0,19),':','_')}",
+														"type": "Expression"
+													}
+												}
+											}
+										]
+									},
+									{
+										"name": "mark_set_multi",
+										"type": "SqlServerStoredProcedure",
+										"dependsOn": [
+											{
+												"activity": "Move_multi",
+												"dependencyConditions": [
+													"Succeeded"
+												]
+											}
+										],
+										"policy": {
+											"timeout": "0.00:10:00",
+											"retry": 10,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"storedProcedureName": "[dbo].[sp_set_mark]",
+											"storedProcedureParameters": {
+												"DataRead": {
+													"value": {
+														"value": "@activity('Move_multi').output.dataRead",
+														"type": "Expression"
+													},
+													"type": "Int64"
+												},
+												"DataWritten": {
+													"value": {
+														"value": "@activity('Move_multi').output.dataWritten",
+														"type": "Expression"
+													},
+													"type": "Int64"
+												},
+												"Duration": {
+													"value": {
+														"value": "@activity('Move_multi').output.copyDuration",
+														"type": "Expression"
+													},
+													"type": "Int64"
+												},
+												"ObjectID": {
+													"value": {
+														"value": "@pipeline().parameters.MoveObjectID",
+														"type": "Expression"
+													},
+													"type": "Int32"
+												},
+												"RowsCopied": {
+													"value": {
+														"value": "@activity('Move_multi').output.rowsCopied",
+														"type": "Expression"
+													},
+													"type": "Int64"
+												},
+												"RowsRead": {
+													"value": {
+														"value": "@activity('Move_multi').output.rowsRead",
+														"type": "Expression"
+													},
+													"type": "Int64"
+												},
+												"Value": {
+													"value": {
+														"value": "@activity('mark_get_source_multi').output.firstRow.Mark",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"ValueType": {
+													"value": {
+														"value": "@activity('MultiMarkColumns').output.value[0].FMarkColumnType",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"InitMarkSource": {
+													"value": {
+														"value": "@activity('mark_get_source_multi').output.firstRow.Mark",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"InitMarkDest": {
+													"value": {
+														"value": "@activity('MultiMarkColumns').output.value[0].FLastMark",
+														"type": "Expression"
+													},
+													"type": "String"
+												}
+											}
+										},
+										"linkedServiceName": {
+											"referenceName": "Azure_SQL_DF_META",
+											"type": "LinkedServiceReference"
+										}
+									}
+								]
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"MoveObjectID": {
+				"type": "Int",
+				"defaultValue": 86
+			},
+			"Env": {
+				"type": "String",
+				"defaultValue": "prod"
+			},
+			"ConnectionStringSecretKey": {
+				"type": "String",
+				"defaultValue": "con-str-aws-mysql-backend"
+			}
+		},
+		"folder": {
+			"name": "DataMove"
+		},
+		"annotations": []
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

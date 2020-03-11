@@ -1,0 +1,15 @@
+{
+	"name": "AWS_RDS_Postgres_Cloud_GW",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AWS_RDS_PG_Cloud_GW",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "AWS RDS"
+		},
+		"annotations": [],
+		"type": "RelationalTable"
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

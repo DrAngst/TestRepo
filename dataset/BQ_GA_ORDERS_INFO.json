@@ -1,0 +1,15 @@
+{
+	"name": "BQ_GA_ORDERS_INFO",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "BIG_QUERY_rebuy_ga",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "Misc"
+		},
+		"annotations": [],
+		"type": "GoogleBigQueryObject"
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

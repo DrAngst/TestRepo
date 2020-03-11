@@ -1,0 +1,31 @@
+{
+	"name": "DataLake Viridian All Every 2H",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "DL_Trigger",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"Project": "dl_viridian",
+					"Env": "prod",
+					"LoadAll": true,
+					"LoadDelta": false,
+					"ConnectionStringSecretKey": "con-str-azure-sql-viridian"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Hour",
+				"interval": 2,
+				"startTime": "2019-04-08T00:13:00Z",
+				"timeZone": "UTC"
+			}
+		}
+	}
+}

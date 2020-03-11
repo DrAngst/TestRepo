@@ -1,0 +1,17 @@
+{
+	"name": "Azure_SQL_DF_META",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"parameters": {
+			"environment": {
+				"type": "String",
+				"defaultValue": "dev"
+			}
+		},
+		"annotations": [],
+		"type": "AzureSqlDatabase",
+		"typeProperties": {
+			"connectionString": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=rebuy-bi.database.windows.net;Initial Catalog=rb_bi_df_meta"
+		}
+	}
+}

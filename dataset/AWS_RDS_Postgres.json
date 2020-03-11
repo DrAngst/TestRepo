@@ -1,0 +1,15 @@
+{
+	"name": "AWS_RDS_Postgres",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AWS_RDS_POSTGRES",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "AWS RDS"
+		},
+		"annotations": [],
+		"type": "RelationalTable"
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

@@ -1,0 +1,31 @@
+{
+	"name": "DataLake PG Repair Every 2H",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "DL_Trigger",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"Project": "dl_repair",
+					"Env": "prod",
+					"LoadAll": false,
+					"LoadDelta": true,
+					"ConnectionStringSecretKey": "con-str-aws-pg-backend"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Hour",
+				"interval": 2,
+				"startTime": "2020-01-30T14:08:00Z",
+				"timeZone": "UTC"
+			}
+		}
+	}
+}

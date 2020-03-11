@@ -1,0 +1,33 @@
+{
+	"name": "DataLake PG Amazon All Every 6H",
+	"properties": {
+		"annotations": [
+			"DataLake Fill"
+		],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "DL_Trigger",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"Project": "dl_pg_amazon",
+					"Env": "prod",
+					"LoadAll": true,
+					"LoadDelta": false,
+					"ConnectionStringSecretKey": "con-str-aws-pg-backend"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Hour",
+				"interval": 6,
+				"startTime": "2018-12-06T00:35:00Z",
+				"timeZone": "UTC"
+			}
+		}
+	}
+}

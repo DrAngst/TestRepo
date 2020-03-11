@@ -1,0 +1,33 @@
+{
+	"name": "DataLake Order_Green Delta Every Even Hour",
+	"properties": {
+		"annotations": [
+			"DataLake Fill"
+		],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "DL_Trigger",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"Project": "dl_mysql_order_green",
+					"Env": "prod",
+					"LoadAll": true,
+					"LoadDelta": true,
+					"ConnectionStringSecretKey": "con-str-aws-mysql-backend"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Hour",
+				"interval": 2,
+				"startTime": "2019-01-14T00:20:00Z",
+				"timeZone": "UTC"
+			}
+		}
+	}
+}
